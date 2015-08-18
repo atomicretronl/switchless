@@ -16,7 +16,17 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <stdio.h>
+#define _XTAL_FREQ 4000000
+#include <pic.h>
+#include <xc.h>
+
+#pragma config WDTE=OFF
+#pragma config PWRTE=OFF
+#pragma config CP=OFF
+#pragma config BOREN=ON
+#pragma config MCLRE=OFF
+#pragma config CPD=OFF
+#pragma config FOSC=INTRCIO
 
 /*
  * Compile-time configuration
@@ -142,7 +152,6 @@ unsigned char mode_masks[MODE_PORTS];
 #define RESET_ACTIVE RESET_ACTIVE_LOW
 #endif
 
-
 int main(void) {
     int i = 0;
     int p = 0;
@@ -160,8 +169,7 @@ int main(void) {
     /* Initialisation */
 
     while(1) {
-        /* Read port(s) */
-
+        __delay_ms(1000);
     }
 }
 

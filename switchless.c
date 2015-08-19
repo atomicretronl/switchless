@@ -66,10 +66,17 @@ typedef enum {
   MODE_PORTS,
 } mode_port_t;
 /* Map above indices to actual ports */
-volatile unsigned char *mode_ports[MODE_PORTS] = {
+volatile unsigned char *mode_port[MODE_PORTS] = {
   &PORTA,
   &PORTC
 };
+/* Same for TRIS */
+volatile unsigned char *mode_tris[MODE_PORTS] = {
+  &TRISA,
+  &TRISC
+};
+#define PORT_MASK 0x3f
+#define TRIS_MASK PORT_MASK
 
 /*
  * Helper macros
@@ -105,13 +112,13 @@ typedef enum {
 #define MD_PAL      0x00
 #define MD_NTSC     0x02
 
-const unsigned char modes[MODES][MODE_PORTS] = {
+const unsigned char mode[MODES][MODE_PORTS] = {
     /* PORTA bits,   PORTC bits */
     { (MD_NTSC), (MD_ENGLISH)  }, /* USA */
     { (MD_NTSC), (MD_JAPANESE) }, /* Japan */
     { (MD_PAL),  (MD_ENGLISH)  }  /* Europe */
 };
-const unsigned char colours[MODES] = {
+const unsigned char colour[MODES] = {
     (LED_BLUE),
     (LED_RED),
     (LED_GREEN),
@@ -130,14 +137,14 @@ const unsigned char colours[MODES] = {
 #define SATURN_PAL  0x00
 #define SATURN_NTSC 0x02
 
-const unsigned char modes[MODES][MODE_PORTS] = {
+const unsigned char mode[MODES][MODE_PORTS] = {
     /* PORTA bits,   PORTC bits */
     { (SATURN_NTSC), (SATURN_JP10)             }, /* USA */
     { (SATURN_NTSC), (SATURN_JP6)              }, /* Japan */
     { (SATURN_PAL),  (SATURN_JP10|SATURN_JP12) }, /* Europe */
     { (SATURN_NTSC), (SATURN_JP10|SATURN_JP12) }, /* Europe 60Hz */
 };
-const unsigned char colours[MODES] = {
+const unsigned char colour[MODES] = {
     (LED_BLUE),
     (LED_RED),
     (LED_GREEN),
@@ -147,7 +154,7 @@ const unsigned char colours[MODES] = {
 #error "No CONSOLE type defined."
 #endif
 
-unsigned char mode_masks[MODE_PORTS];
+unsigned char mode_mask[MODE_PORTS];
 
 /*
  * Defaults
@@ -175,7 +182,7 @@ void set_led(unsigned char colour) {
     state &= ~LED_MASK;
     state |= led_bits;
 
-    LED_PORT = state;
+    LED_PORT = (state & PORT_MASK);
 }
 
 /*
@@ -206,20 +213,43 @@ void error(unsigned char code) {
 /*
  * Set the mode outputs on all applicable ports.
  */
-void set_mode(unsigned char mode) {
+void set_mode(unsigned char m) {
     int p = 0;
 
     for( p = 0 ; p < MODE_PORTS ; p++ ) {
-        unsigned char state = *mode_ports[p];
-        unsigned char mode_bits = modes[mode][p] & mode_masks[p];
+        unsigned char state = *mode_port[p];
+        unsigned char mode_bits = mode[m][p] & mode_mask[p];
 
-        state &= ~mode_masks[p];
+        state &= ~mode_mask[p];
         state |= mode_bits;
 
-        *mode_ports[p] = state;
+        *mode_port[p] = (state & PORT_MASK);
     }
 
-    set_led(colours[mode]);
+    set_led(colour[m]);
+}
+
+void init_chip(void) {
+    int p = 0;
+
+    CMCON = 0x03; /* Disable comparator */
+
+    for( p = 0 ; p < MODE_PORTS ; p++ ) {
+        unsigned char outputs = mode_mask[p];
+
+        if( mode_port[p] == &LED_PORT ) {
+            outputs |= LED_MASK;
+        }
+        if( mode_port[p] == &RESET_IN_PORT ) {
+            /* Leave as input */
+        }
+        if( mode_port[p] == &RESET_OUT_PORT ) {
+            outputs |= RESET_OUT;
+        }
+
+        *mode_port[p] = 0;
+        *mode_tris[p] = ((~outputs) & TRIS_MASK);
+    }
 }
 
 void main(void) {
@@ -229,14 +259,15 @@ void main(void) {
     /* Calculate the bitmasks for the pins used for mode output, based on
      * configuration. This could be done at compile time but this way is easy
      * and a bit dryer. */
-    for ( p = 0 ; p < MODE_PORTS ; p++ ) {
-        mode_masks[p] = 0;
-        for ( i = 0 ; i < MODES ; i++ ) {
-            mode_masks[p] |= modes[i][p];
+    for( p = 0 ; p < MODE_PORTS ; p++ ) {
+        mode_mask[p] = 0;
+        for( i = 0 ; i < MODES ; i++ ) {
+            mode_mask[p] |= mode[i][p];
         }
     }
 
     /* Initialisation */
+    init_chip();
 
     while(1) {
         __delay_ms(1000);

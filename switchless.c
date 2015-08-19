@@ -197,6 +197,34 @@ const unsigned char colour[MODES] = {
     (LED_GREEN),
     (LED_YELLOW),
 };
+#elif defined(CONSOLE_TEST)
+/*
+ * For testing - simply cycles trough the available mode outputs using
+ * different LED colours for each.
+ */
+#define MODES 8
+
+const unsigned char mode[MODES][MODE_PORTS] = {
+    /* PORTA bits, PORTC bits */
+    { 0x00,        0x00 },
+    { 0x01,        0x00 },
+    { 0x08,        0x00 },
+    { 0x10,        0x00 },
+    { 0x20,        0x00 },
+    { 0x00,        0x01 },
+    { 0x00,        0x02 },
+    { 0x00,        0x04 },
+};
+const unsigned char colour[MODES] = {
+    (LED_OFF),
+    (LED_RED),
+    (LED_YELLOW),
+    (LED_GREEN),
+    (LED_CYAN),
+    (LED_BLUE),
+    (LED_MAGENTA),
+    (LED_WHITE)
+};
 #else
 #error "No CONSOLE type defined."
 #endif
@@ -276,11 +304,43 @@ void set_mode(unsigned char m) {
     set_led(colour[m]);
 }
 
+void reset_console(void) {
+    /* Assert the reset signal. */
+    if( RESET_ACTIVE == RESET_ACTIVE_LOW ) {
+        RESET_OUT_PORT &= ~RESET_OUT;
+    }
+    else {
+        RESET_OUT_PORT |= RESET_OUT;
+    }
+
+    __delay_ms(250);
+
+    /* Stop resetting */
+    if( RESET_ACTIVE == RESET_ACTIVE_LOW ) {
+        RESET_OUT_PORT |= RESET_OUT;
+    }
+    else {
+        RESET_OUT_PORT &= ~RESET_OUT;
+    }
+}
+
 void init_chip(void) {
     int p = 0;
+    int m = 0;
 
     CMCON = 0x03; /* Disable comparator */
 
+    /* Calculate the bitmasks for the pins used for mode output, based on
+     * configuration. This could be done at compile time but this way is easy
+     * and a bit dryer. */
+    for( p = 0 ; p < MODE_PORTS ; p++ ) {
+        mode_mask[p] = 0;
+        for( m = 0 ; m < MODES ; m++ ) {
+            mode_mask[p] |= mode[m][p];
+        }
+    }
+
+    /* Set pins to input/output as necessary. */
     for( p = 0 ; p < MODE_PORTS ; p++ ) {
         unsigned char outputs = mode_mask[p];
 
@@ -300,18 +360,7 @@ void init_chip(void) {
 }
 
 void main(void) {
-    int i = 0;
-    int p = 0;
-
-    /* Calculate the bitmasks for the pins used for mode output, based on
-     * configuration. This could be done at compile time but this way is easy
-     * and a bit dryer. */
-    for( p = 0 ; p < MODE_PORTS ; p++ ) {
-        mode_mask[p] = 0;
-        for( i = 0 ; i < MODES ; i++ ) {
-            mode_mask[p] |= mode[i][p];
-        }
-    }
+    unsigned char current_mode = 0;
 
     /* Initialisation */
     init_chip();

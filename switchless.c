@@ -161,15 +161,16 @@ unsigned char mode_masks[MODE_PORTS];
 #endif
 
 /*
- * Set the LED to a specific colour (see the LED_ macros).
+ * Set the LED to a specific colour (see the LED_* macros).
  */
 void set_led(unsigned char colour) {
     unsigned char state = LED_PORT;
-    unsigned char led_bits = colour & LED_MASK;
+    unsigned char led_bits = colour;
 
     if( LED_MODE == LED_COMMON_ANODE ) {
         led_bits = ~led_bits;
     }
+    led_bits &= LED_MASK;
 
     state &= ~LED_MASK;
     state |= led_bits;
@@ -181,12 +182,24 @@ void set_led(unsigned char colour) {
  * Should an unrecoverable error occur, blink the LED. This should of course
  * never happen...
  */
-void error() {
+void error(unsigned char code) {
+    int i = 0;
+    int blinks = code;
+
+    if( blinks < 1 ) {
+        blinks = 1;
+    }
+
     while(1) {
-        set_led(LED_RED);
-        __delay_ms(1000);
         set_led(LED_OFF);
         __delay_ms(1000);
+
+        for ( i = 0 ; i < blinks ; i++ ) {
+            set_led(LED_RED);
+            __delay_ms(200);
+            set_led(LED_OFF);
+            __delay_ms(500);
+        }
     }
 }
 

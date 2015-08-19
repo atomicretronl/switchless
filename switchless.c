@@ -37,7 +37,7 @@
 #define LED_COMMON_CATHODE  0
 #define LED_COMMON_ANODE    1
 #ifndef LED_MODE
-#define LED_MODE LED_COMMON_CATHODE
+#define LED_MODE LED_COMMON_ANODE
 #endif
 
 /* LED port */
@@ -331,7 +331,7 @@ void init_chip(void) {
     int p = 0;
     int m = 0;
 
-    CMCON = 0x03; /* Disable comparator */
+    CMCON = 0x07; /* Disable comparator */
 
     /* Calculate the bitmasks for the pins used for mode output, based on
      * configuration. This could be done at compile time but this way is easy
@@ -369,6 +369,8 @@ void main(void) {
 
     /* Initialisation */
     init_chip();
+    set_mode(0);
+    reset_console();
 
     while(1) {
         if( RESET_PRESSED ) {
@@ -384,6 +386,7 @@ void main(void) {
                      reset_console();
                 }
                 else {
+                     displayed_mode = current_mode;
                      waiting = RESET_SHORT;
 
                      /* Whilst button is held, cycle through modes. */
@@ -393,10 +396,12 @@ void main(void) {
                              waiting += 100;
                          }
 
-                         waiting = 0;
-                         displayed_mode++;
-                         displayed_mode %= MODES;
-                         set_led(colour[displayed_mode]);
+                         if ( RESET_PRESSED ) {
+                             waiting = 0;
+                             displayed_mode++;
+                             displayed_mode %= MODES;
+                             set_led(colour[displayed_mode]);
+                         }
                      }
 
                      /* Button is released - switch modes if necessary. */

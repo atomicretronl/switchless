@@ -98,7 +98,54 @@ typedef enum {
     REGION_EURO60,
 } region_t;
 
-#ifdef CONSOLE_MEGA_DRIVE
+#if defined(CONSOLE_SNES_PAL) || defined(CONSOLE_SNES_NTSC)
+/*
+ * Nintendo Super NES/Super Famicom
+ *
+ * This is somewhat obsolete, now that SuperCIC is available.
+ * (see https://sd2snes.de/blog/cool-stuff/supercic)
+ *
+ * Four modes are provided, which do not all directly map to a particular
+ * region:
+ *
+ * 1. Factory mode: settings as the console came from the factory, i.e.
+ *    default video mode and CIC enabled.
+ * 2. Same as above but CIC disabled. This is useful for playing domestic
+ *    games which fail to start if the video mode is not what it expected.
+ * 3. Alternate video mode, CIC disabled. On PAL consoles, primarily useful
+ *    for running run import games (and most domestic games) at 60Hz. On NTSC
+ *    consoles, useful for playing PAL games which fail to start if the video
+ *    mode is not what it expected.
+ * 4. Alternate video mode, CIC enabled.
+ */
+#define MODES             4
+
+#define SNES_CIC_ENABLED  0x01
+#define SNES_CIC_DISABLED 0x00
+#define SNES_PAL          0x00
+#define SNES_NTSC         0x02
+
+const unsigned char mode[MODES][MODE_PORTS] = {
+    /* PORTA bits, PORTC bits */
+#ifdef CONSOLE_SNES_PAL
+    { (SNES_PAL),  (SNES_CIC_ENABLED)  }, /* Factory mode: 50Hz, CIC on */
+    { (SNES_PAL),  (SNES_CIC_DISABLED) }, /* 50Hz, CIC off */
+    { (SNES_NTSC), (SNES_CIC_DISABLED) }, /* 60Hz, CIC off */
+    { (SNES_NTSC), (SNES_CIC_ENABLED)  }, /* 60Hz, CIC on */
+#else
+    { (SNES_NTSC), (SNES_CIC_ENABLED)  }, /* Factory mode: 60Hz, CIC on */
+    { (SNES_NTSC), (SNES_CIC_DISABLED) }, /* 60Hz, CIC off */
+    { (SNES_PAL),  (SNES_CIC_DISABLED) }, /* 50Hz, CIC off */
+    { (SNES_PAL),  (SNES_CIC_ENABLED)  }, /* 50Hz, CIC on */
+#endif
+};
+const unsigned char colour[MODES] = {
+    (LED_RED),
+    (LED_YELLOW),
+    (LED_GREEN),
+    (LED_BLUE),
+};
+#elif defined CONSOLE_MEGA_DRIVE
 /*
  * Sega Mega Drive/Genesis
  *

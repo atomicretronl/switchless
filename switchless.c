@@ -36,6 +36,9 @@
 /* LED type */
 #define LED_COMMON_CATHODE  0
 #define LED_COMMON_ANODE    1
+#ifndef LED_MODE
+#define LED_MODE LED_COMMON_CATHODE
+#endif
 
 /* LED port */
 #define LED_PORT            PORTC
@@ -49,6 +52,13 @@
 /* Reset properties */
 #define RESET_ACTIVE_HIGH   1
 #define RESET_ACTIVE_LOW    0
+#ifndef RESET_ACTIVE
+#define RESET_ACTIVE RESET_ACTIVE_LOW
+#endif
+/* Delays (in milliseconds) */
+#define RESET_DEBOUNCE      25
+#define RESET_SHORT         (500-(RESET_DEBOUNCE))
+#define RESET_CYCLE         1000
 
 /* Reset port(s) and pins */
 #define RESET_IN_PORT       PORTA
@@ -75,8 +85,6 @@ volatile unsigned char *mode_tris[MODE_PORTS] = {
   &TRISA,
   &TRISC
 };
-#define PORT_MASK 0x3f
-#define TRIS_MASK PORT_MASK
 
 /*
  * Helper macros
@@ -87,6 +95,12 @@ volatile unsigned char *mode_tris[MODE_PORTS] = {
 #define LED_MAGENTA (LED_RED|LED_BLUE)
 #define LED_WHITE   (LED_RED|LED_GREEN|LED_BLUE)
 #define LED_OFF     0x00
+
+#if (RESET_ACTIVE == RESET_ACTIVE_LOW)
+#define RESET_PRESSED ((RESET_IN_PORT & RESET_IN) == 0)
+#else
+#define RESET_PRESSED ((RESET_IN_PORT & RESET_IN) != 0)
+#endif
 
 /*
  * Modes
@@ -232,17 +246,6 @@ const unsigned char colour[MODES] = {
 unsigned char mode_mask[MODE_PORTS];
 
 /*
- * Defaults
- */
-#ifndef LED_MODE
-#define LED_MODE LED_COMMON_CATHODE
-#endif
-
-#ifndef RESET_ACTIVE
-#define RESET_ACTIVE RESET_ACTIVE_LOW
-#endif
-
-/*
  * Set the LED to a specific colour (see the LED_* macros).
  */
 void set_led(unsigned char colour) {
@@ -257,7 +260,7 @@ void set_led(unsigned char colour) {
     state &= ~LED_MASK;
     state |= led_bits;
 
-    LED_PORT = (state & PORT_MASK);
+    LED_PORT = state;
 }
 
 /*
@@ -298,7 +301,7 @@ void set_mode(unsigned char m) {
         state &= ~mode_mask[p];
         state |= mode_bits;
 
-        *mode_port[p] = (state & PORT_MASK);
+        *mode_port[p] = state;
     }
 
     set_led(colour[m]);
@@ -355,18 +358,55 @@ void init_chip(void) {
         }
 
         *mode_port[p] = 0;
-        *mode_tris[p] = ((~outputs) & TRIS_MASK);
+        *mode_tris[p] = ~outputs;
     }
 }
 
 void main(void) {
     unsigned char current_mode = 0;
+    unsigned char displayed_mode = 0;
+    unsigned int waiting = 0;
 
     /* Initialisation */
     init_chip();
 
     while(1) {
-        __delay_ms(1000);
+        if( RESET_PRESSED ) {
+            /* Wait for bounce... */
+            __delay_ms(RESET_DEBOUNCE);
+
+            if( RESET_PRESSED ) {
+                /* Consider the button really pressed - not just noise. */
+                __delay_ms(RESET_SHORT);
+
+                if( ! RESET_PRESSED ) {
+                     /* Button lifted early, so reset the console. */
+                     reset_console();
+                }
+                else {
+                     waiting = RESET_SHORT;
+
+                     /* Whilst button is held, cycle through modes. */
+                     while( RESET_PRESSED ) {
+                         while( RESET_PRESSED && waiting < RESET_CYCLE ) {
+                             __delay_ms(100);
+                             waiting += 100;
+                         }
+
+                         waiting = 0;
+                         displayed_mode++;
+                         displayed_mode %= MODES;
+                         set_led(colour[displayed_mode]);
+                     }
+
+                     /* Button is released - switch modes if necessary. */
+                     if( current_mode != displayed_mode ) {
+                         set_mode(displayed_mode);
+                         current_mode = displayed_mode;
+                     }
+                }
+            }
+        }
     }
 }
 

@@ -16,6 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
 #define _XTAL_FREQ 4000000
 #include <pic.h>
 #include <xc.h>
@@ -64,6 +65,11 @@ typedef enum {
   MODE_PORT_C,
   MODE_PORTS,
 } mode_port_t;
+/* Map above indices to actual ports */
+volatile unsigned char *mode_ports[MODE_PORTS] = {
+  &PORTA,
+  &PORTC
+};
 
 /*
  * Helper macros
@@ -72,6 +78,8 @@ typedef enum {
 #define LED_YELLOW  (LED_RED|LED_GREEN)
 #define LED_CYAN    (LED_GREEN|LED_BLUE)
 #define LED_MAGENTA (LED_RED|LED_BLUE)
+#define LED_WHITE   (LED_RED|LED_GREEN|LED_BLUE)
+#define LED_OFF     0x00
 
 /*
  * Modes
@@ -152,7 +160,56 @@ unsigned char mode_masks[MODE_PORTS];
 #define RESET_ACTIVE RESET_ACTIVE_LOW
 #endif
 
-int main(void) {
+/*
+ * Set the LED to a specific colour (see the LED_ macros).
+ */
+void set_led(unsigned char colour) {
+    unsigned char state = LED_PORT;
+    unsigned char led_bits = colour & LED_MASK;
+
+    if( LED_MODE == LED_COMMON_ANODE ) {
+        led_bits = ~led_bits;
+    }
+
+    state &= ~LED_MASK;
+    state |= led_bits;
+
+    LED_PORT = state;
+}
+
+/*
+ * Should an unrecoverable error occur, blink the LED. This should of course
+ * never happen...
+ */
+void error() {
+    while(1) {
+        set_led(LED_RED);
+        __delay_ms(1000);
+        set_led(LED_OFF);
+        __delay_ms(1000);
+    }
+}
+
+/*
+ * Set the mode outputs on all applicable ports.
+ */
+void set_mode(unsigned char mode) {
+    int p = 0;
+
+    for( p = 0 ; p < MODE_PORTS ; p++ ) {
+        unsigned char state = *mode_ports[p];
+        unsigned char mode_bits = modes[mode][p] & mode_masks[p];
+
+        state &= ~mode_masks[p];
+        state |= mode_bits;
+
+        *mode_ports[p] = state;
+    }
+
+    set_led(colours[mode]);
+}
+
+void main(void) {
     int i = 0;
     int p = 0;
 

@@ -71,20 +71,31 @@
 
 /* Mode array uses these index values */
 typedef enum {
-  MODE_PORT_A = 0,
-  MODE_PORT_C,
-  MODE_PORTS,
+    MODE_PORT_A = 0,
+    MODE_PORT_C,
+    MODE_PORTS,
 } mode_port_t;
 /* Map above indices to actual ports */
 volatile unsigned char *mode_port[MODE_PORTS] = {
-  &PORTA,
-  &PORTC
+    &PORTA,
+    &PORTC
 };
 /* Same for TRIS */
 volatile unsigned char *mode_tris[MODE_PORTS] = {
-  &TRISA,
-  &TRISC
+    &TRISA,
+    &TRISC
 };
+
+/*
+ * EEPROM data locations.
+ */
+typedef enum {
+    EEPROM_LOCATION_MODE = 0,
+    EEPROM_LOCATIONS
+} eeprom_location_t;
+
+/* Initial data */
+__EEPROM_DATA(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 
 /*
  * Helper macros
@@ -248,6 +259,13 @@ unsigned char current_mode = 0;
 unsigned char displayed_mode = 0;
 
 /*
+ * Save current state to EEPROM.
+ */
+void save_config(void) {
+    eeprom_write(EEPROM_LOCATION_MODE, current_mode);
+}
+
+/*
  * Set the LED to a specific colour (see the LED_* macros).
  */
 void set_led_colour(unsigned char colour) {
@@ -299,7 +317,8 @@ void error(unsigned char code) {
 }
 
 /*
- * Set the mode outputs on all applicable ports.
+ * Set the mode outputs on all applicable ports, update LED and save new state
+ * to EEPROM.
  */
 void set_mode(unsigned char m) {
     int p = 0;
@@ -316,6 +335,7 @@ void set_mode(unsigned char m) {
 
     set_led_mode(m);
     current_mode = m;
+    save_config();
 }
 
 void reset_console(void) {
@@ -373,12 +393,29 @@ void init_chip(void) {
     }
 }
 
+/*
+ * Load (and apply) state from EEPROM.
+ */
+void load_config(void) {
+    unsigned char m = eeprom_read(EEPROM_LOCATION_MODE);
+
+    if( m > MODES ) {
+        /* Bad mode stored in EEPROM, set to zero. */
+        m = 0;
+    }
+    set_mode(m);
+}
+
 void main(void) {
     unsigned int waiting = 0;
 
     /* Initialisation */
     init_chip();
-    set_mode(0);
+    load_config();
+
+    /* Full reset is not strictly necessary here, but this also ensures that
+     * the reset signal to the console is released, regardless of the initial
+     * state of the corresponding pin. */
     reset_console();
 
     while(1) {

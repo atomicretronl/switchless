@@ -33,13 +33,6 @@
  * Compile-time configuration
  */
 
-/* LED type */
-#define LED_COMMON_CATHODE  0
-#define LED_COMMON_ANODE    1
-#ifndef LED_MODE
-#define LED_MODE LED_COMMON_ANODE
-#endif
-
 /* LED port */
 #define LED_PORT            PORTC
 #define LED_TRIS            TRISC
@@ -48,6 +41,11 @@
 #define LED_RED             0x20
 #define LED_GREEN           0x10
 #define LED_BLUE            0x08
+
+/* LED type */
+#ifndef LED_COMMON_PORT     PORTA
+#define LED_COMMON_CATHODE  0x00
+#define LED_COMMON_ANODE    0x08
 
 /* Reset properties */
 #define RESET_ACTIVE_HIGH   1
@@ -63,7 +61,7 @@
 /* Reset port(s) and pins */
 #define RESET_IN_PORT       PORTA
 #define RESET_IN_TRIS       TRISA
-#define RESET_IN            0x02
+#define RESET_IN            0x01
 
 #define RESET_OUT_PORT      PORTA
 #define RESET_OUT_TRIS      TRISA
@@ -227,13 +225,11 @@ const unsigned char colour[MODES] = {
  * For testing - simply cycles trough the available mode outputs using
  * different LED colours for each.
  */
-#define MODES 8
+#define MODES 6
 
 const unsigned char mode[MODES][MODE_PORTS] = {
     /* PORTA bits, PORTC bits */
-    { 0x00,        0x00 },
-    { 0x01,        0x00 },
-    { 0x08,        0x00 },
+    { 0x02,        0x00 },
     { 0x10,        0x00 },
     { 0x20,        0x00 },
     { 0x00,        0x01 },
@@ -241,14 +237,12 @@ const unsigned char mode[MODES][MODE_PORTS] = {
     { 0x00,        0x04 },
 };
 const unsigned char colour[MODES] = {
-    (LED_OFF),
     (LED_RED),
     (LED_YELLOW),
     (LED_GREEN),
     (LED_CYAN),
     (LED_BLUE),
-    (LED_MAGENTA),
-    (LED_WHITE)
+    (LED_MAGENTA)
 };
 #else
 #error "No CONSOLE type defined."
@@ -272,7 +266,7 @@ void set_led_colour(unsigned char colour) {
     unsigned char state = LED_PORT;
     unsigned char led_bits = colour;
 
-    if( LED_MODE == LED_COMMON_ANODE ) {
+    if( LED_COMMON_PORT & LED_COMMON_ANODE ) {
         led_bits = ~led_bits;
     }
     led_bits &= LED_MASK;

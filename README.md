@@ -27,30 +27,30 @@ same pinout, as illustrated below.
 
 ```
 
-* *+5V/Ground*:
+* _+5V/Ground_:
   DC power. This is hooked up to the console's internal power supply.
 
-* *Reset button/Reset console*:
+* _Reset button/Reset console_:
   The console's reset button, usually isolated form the system, is connected to
   the _Reset button_ pin. When pressed briefly (by default < 500ms) the _Reset
   console_ pin is activated, resetting the console as normal. Holding the reset
   button cycles through the available modes.
 
-* *50/60Hz Out
+* _50/60Hz Out_:
   Sets the console to 50Hz or 60Hz as determined by the currently selected
   mode.
 
-* GPIO 0-4
+* _GPIO 0-4_:
   Used to set the console's region (or other features) depending on the
   currently selected mode. The state of each pin varies per console (see
   below).
 
-* LED Red/Green/Blue
+* _LED Red/Green/Blue_:
   Individual pins to connect to the red, green and blue components of a
   multi-coloured LED (through a suitable resistor). This LED is used to display
   the currently selected mode.
 
-* LED type
+* _LED type_:
   Used to select the type of LED used. For a common cathode LED, connect to
   ground. For common anode, connect to +5V, preferably via a pull-up resistor.
 

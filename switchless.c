@@ -244,11 +244,13 @@ const unsigned char colour[MODES] = {
 #endif
 
 unsigned char mode_mask[MODE_PORTS];
+unsigned char current_mode = 0;
+unsigned char displayed_mode = 0;
 
 /*
  * Set the LED to a specific colour (see the LED_* macros).
  */
-void set_led(unsigned char colour) {
+void set_led_colour(unsigned char colour) {
     unsigned char state = LED_PORT;
     unsigned char led_bits = colour;
 
@@ -264,6 +266,14 @@ void set_led(unsigned char colour) {
 }
 
 /*
+ * Set LED according to mode.
+ */
+void set_led_mode(unsigned char m) {
+    set_led_colour(colour[m]);
+    displayed_mode = m;
+}
+
+/*
  * Should an unrecoverable error occur, blink the LED. This should of course
  * never happen...
  */
@@ -276,13 +286,13 @@ void error(unsigned char code) {
     }
 
     while(1) {
-        set_led(LED_OFF);
+        set_led_colour(LED_OFF);
         __delay_ms(1000);
 
         for ( i = 0 ; i < blinks ; i++ ) {
-            set_led(LED_RED);
+            set_led_colour(LED_RED);
             __delay_ms(200);
-            set_led(LED_OFF);
+            set_led_colour(LED_OFF);
             __delay_ms(500);
         }
     }
@@ -304,7 +314,8 @@ void set_mode(unsigned char m) {
         *mode_port[p] = state;
     }
 
-    set_led(colour[m]);
+    set_led_mode(m);
+    current_mode = m;
 }
 
 void reset_console(void) {
@@ -363,8 +374,6 @@ void init_chip(void) {
 }
 
 void main(void) {
-    unsigned char current_mode = 0;
-    unsigned char displayed_mode = 0;
     unsigned int waiting = 0;
 
     /* Initialisation */
@@ -393,8 +402,6 @@ void main(void) {
                     reset_console();
                 }
                 else {
-                    displayed_mode = current_mode;
-
                     /* Whilst button is held, cycle through modes. */
                     while( RESET_PRESSED ) {
                         while( RESET_PRESSED && waiting < RESET_CYCLE ) {
@@ -406,14 +413,13 @@ void main(void) {
                             waiting = 0;
                             displayed_mode++;
                             displayed_mode %= MODES;
-                            set_led(colour[displayed_mode]);
+                            set_led_mode(displayed_mode);
                         }
                     }
 
                     /* Button is released - switch modes if necessary. */
                     if( current_mode != displayed_mode ) {
                         set_mode(displayed_mode);
-                        current_mode = displayed_mode;
                     }
                 }
             }

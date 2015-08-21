@@ -57,7 +57,7 @@
 #endif
 /* Delays (in milliseconds) */
 #define RESET_DEBOUNCE      25
-#define RESET_SHORT         (500-(RESET_DEBOUNCE))
+#define RESET_SHORT         500
 #define RESET_CYCLE         1000
 
 /* Reset port(s) and pins */
@@ -379,36 +379,42 @@ void main(void) {
 
             if( RESET_PRESSED ) {
                 /* Consider the button really pressed - not just noise. */
-                __delay_ms(RESET_SHORT);
+                waiting = RESET_DEBOUNCE;
+
+                while( RESET_PRESSED ) {
+                    while( RESET_PRESSED && waiting < RESET_SHORT ) {
+                        __delay_ms(100);
+                        waiting += 100;
+                    }
+                }
 
                 if( ! RESET_PRESSED ) {
-                     /* Button lifted early, so reset the console. */
-                     reset_console();
+                    /* Button lifted early, so reset the console. */
+                    reset_console();
                 }
                 else {
-                     displayed_mode = current_mode;
-                     waiting = RESET_SHORT;
+                    displayed_mode = current_mode;
 
-                     /* Whilst button is held, cycle through modes. */
-                     while( RESET_PRESSED ) {
-                         while( RESET_PRESSED && waiting < RESET_CYCLE ) {
-                             __delay_ms(100);
-                             waiting += 100;
-                         }
+                    /* Whilst button is held, cycle through modes. */
+                    while( RESET_PRESSED ) {
+                        while( RESET_PRESSED && waiting < RESET_CYCLE ) {
+                            __delay_ms(100);
+                            waiting += 100;
+                        }
 
-                         if ( RESET_PRESSED ) {
-                             waiting = 0;
-                             displayed_mode++;
-                             displayed_mode %= MODES;
-                             set_led(colour[displayed_mode]);
-                         }
-                     }
+                        if ( RESET_PRESSED ) {
+                            waiting = 0;
+                            displayed_mode++;
+                            displayed_mode %= MODES;
+                            set_led(colour[displayed_mode]);
+                        }
+                    }
 
-                     /* Button is released - switch modes if necessary. */
-                     if( current_mode != displayed_mode ) {
-                         set_mode(displayed_mode);
-                         current_mode = displayed_mode;
-                     }
+                    /* Button is released - switch modes if necessary. */
+                    if( current_mode != displayed_mode ) {
+                        set_mode(displayed_mode);
+                        current_mode = displayed_mode;
+                    }
                 }
             }
         }

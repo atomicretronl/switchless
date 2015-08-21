@@ -38,12 +38,12 @@
 #define LED_TRIS            TRISC
 
 /* LED colours */
-#define LED_RED             0x20
-#define LED_GREEN           0x10
-#define LED_BLUE            0x08
+#define LED_RED             0x10
+#define LED_GREEN           0x20
+#define LED_BLUE            0x04
 
 /* LED type */
-#ifndef LED_COMMON_PORT     PORTA
+#define LED_COMMON_PORT     PORTC
 #define LED_COMMON_CATHODE  0x00
 #define LED_COMMON_ANODE    0x08
 
@@ -143,10 +143,10 @@ typedef enum {
  */
 #define MODES             4
 
-#define SNES_CIC_ENABLED  0x01
-#define SNES_CIC_DISABLED 0x00
 #define SNES_PAL          0x00
 #define SNES_NTSC         0x02
+#define SNES_CIC_ENABLED  0x01
+#define SNES_CIC_DISABLED 0x00
 
 const unsigned char mode[MODES][MODE_PORTS] = {
     /* PORTA bits, PORTC bits */
@@ -177,13 +177,13 @@ const unsigned char colour[MODES] = {
  */
 #define MODES       3
 
-#define MD_ENGLISH  0x01
-#define MD_JAPANESE 0x00
 #define MD_PAL      0x00
 #define MD_NTSC     0x02
+#define MD_ENGLISH  0x01
+#define MD_JAPANESE 0x00
 
 const unsigned char mode[MODES][MODE_PORTS] = {
-    /* PORTA bits,   PORTC bits */
+    /* PORTA bits, PORTC bits */
     { (MD_NTSC), (MD_ENGLISH)  }, /* USA */
     { (MD_NTSC), (MD_JAPANESE) }, /* Japan */
     { (MD_PAL),  (MD_ENGLISH)  }  /* Europe */
@@ -200,19 +200,19 @@ const unsigned char colour[MODES] = {
  */
 #define MODES          4
 
-#define SATURN_JP6  0x01
-#define SATURN_JP10 0x02
-#define SATURN_JP12 0x04
-
 #define SATURN_PAL  0x00
 #define SATURN_NTSC 0x02
+#define SATURN_JP12 0x10
+
+#define SATURN_JP6  0x01
+#define SATURN_JP10 0x02
 
 const unsigned char mode[MODES][MODE_PORTS] = {
-    /* PORTA bits,   PORTC bits */
-    { (SATURN_NTSC), (SATURN_JP10)             }, /* USA */
-    { (SATURN_NTSC), (SATURN_JP6)              }, /* Japan */
-    { (SATURN_PAL),  (SATURN_JP10|SATURN_JP12) }, /* Europe */
-    { (SATURN_NTSC), (SATURN_JP10|SATURN_JP12) }, /* Europe 60Hz */
+    /* PORTA bits,               PORTC bits */
+    { (SATURN_NTSC),             (SATURN_JP10) }, /* USA */
+    { (SATURN_NTSC),             (SATURN_JP6)  }, /* Japan */
+    { (SATURN_PAL|SATURN_JP12),  (SATURN_JP10) }, /* Europe */
+    { (SATURN_NTSC|SATURN_JP12), (SATURN_JP10) }, /* Europe 60Hz */
 };
 const unsigned char colour[MODES] = {
     (LED_BLUE),
@@ -225,16 +225,17 @@ const unsigned char colour[MODES] = {
  * For testing - simply cycles trough the available mode outputs using
  * different LED colours for each.
  */
-#define MODES 6
+#define MODES 7
 
 const unsigned char mode[MODES][MODE_PORTS] = {
     /* PORTA bits, PORTC bits */
-    { 0x02,        0x00 },
-    { 0x10,        0x00 },
-    { 0x20,        0x00 },
-    { 0x00,        0x01 },
-    { 0x00,        0x02 },
-    { 0x00,        0x04 },
+    { 0x02,        0x00 }, /* 50/60Hz == RA1 */
+    { 0x00,        0x01 }, /* GPIO 0  == RC0 */
+    { 0x00,        0x02 }, /* GPIO 1  == RC1 */
+    { 0x10,        0x00 }, /* GPIO 2  == RA4 */
+    { 0x20,        0x00 }, /* GPIO 3  == RA5 */
+    { 0x00,        0x00 }, /* All off */
+    { 0x32,        0x03 }, /* All on */
 };
 const unsigned char colour[MODES] = {
     (LED_RED),
@@ -242,7 +243,8 @@ const unsigned char colour[MODES] = {
     (LED_GREEN),
     (LED_CYAN),
     (LED_BLUE),
-    (LED_MAGENTA)
+    (LED_MAGENTA),
+    (LED_WHITE),
 };
 #else
 #error "No CONSOLE type defined."

@@ -423,11 +423,9 @@ void main(void) {
                 /* Consider the button really pressed - not just noise. */
                 waiting = RESET_DEBOUNCE;
 
-                while( RESET_PRESSED ) {
-                    while( RESET_PRESSED && waiting < RESET_SHORT ) {
-                        __delay_ms(100);
-                        waiting += 100;
-                    }
+                while( RESET_PRESSED && waiting < RESET_SHORT ) {
+                    __delay_ms(100);
+                    waiting += 100;
                 }
 
                 if( ! RESET_PRESSED ) {

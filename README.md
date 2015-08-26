@@ -19,7 +19,7 @@ same pinout, as illustrated below.
                +5V   [_| 1 Vdd Vss 14 |_]   Ground
             GPIO 3   [_| 2 RA5 RA0 13 |_]   Reset button (IN)
             GPIO 2   [_| 3 RA4 RA1 12 |_]   50/60Hz (OUT)
-            GPIO 4   [_| 4 RA3 RA2 11 |_]   Reset console (OUT)
+   Reset type (IN)   [_| 4 RA3 RA2 11 |_]   Reset console (OUT)
    LED Green (OUT)   [_| 5 RC5 RC0 10 |_]   GPIO 0
      LED Red (OUT)   [_| 6 RC4 RC1  9 |_]   GPIO 1
      LED type (IN)   [_| 7 RC3 RC2  8 |_]   LED Blue (OUT)
@@ -36,11 +36,15 @@ same pinout, as illustrated below.
   console_ pin is activated, resetting the console as normal. Holding the reset
   button cycles through the available modes.
 
+* _Reset type_:
+  For consoles with active low reset, tie this pin to ground. For consoles with
+  active high reset, connect to +5V, preferably via a pull-up resistor.
+
 * _50/60Hz Out_:
   Sets the console to 50Hz or 60Hz as determined by the currently selected
   mode.
 
-* _GPIO 0-4_:
+* _GPIO 0-3_:
   Used to set the console's region (or other features) depending on the
   currently selected mode. The state of each pin varies per console (see
   below).
@@ -94,8 +98,8 @@ video mode (50/60Hz).
 | Red        | Japan  | 60Hz  | Japanese |
 | Green      | Europe | 50Hz  | English  |
 
-If your console has an active high reset, this can be catered for at compile
-time using the `RESET_ACTIVE` define.
+If your console has an active high reset, this can be catered for by correctly
+connecting the _Reset type_ pin.
 
 ### Sega Saturn
 The Saturn offers a great number of region and video mode combinations. The

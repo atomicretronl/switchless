@@ -47,12 +47,6 @@
 #define LED_COMMON_CATHODE  0x00
 #define LED_COMMON_ANODE    0x08
 
-/* Reset properties */
-#define RESET_ACTIVE_HIGH   1
-#define RESET_ACTIVE_LOW    0
-#ifndef RESET_ACTIVE
-#define RESET_ACTIVE RESET_ACTIVE_LOW
-#endif
 /* Delays (in milliseconds) */
 #define RESET_DEBOUNCE      25
 #define RESET_SHORT         500
@@ -62,6 +56,7 @@
 #define RESET_IN_PORT       PORTA
 #define RESET_IN_TRIS       TRISA
 #define RESET_IN            0x01
+#define RESET_ACTIVE_HIGH   0x08
 
 #define RESET_OUT_PORT      PORTA
 #define RESET_OUT_TRIS      TRISA
@@ -104,12 +99,6 @@ __EEPROM_DATA(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 #define LED_MAGENTA (LED_RED|LED_BLUE)
 #define LED_WHITE   (LED_RED|LED_GREEN|LED_BLUE)
 #define LED_OFF     0x00
-
-#if (RESET_ACTIVE == RESET_ACTIVE_LOW)
-#define RESET_PRESSED ((RESET_IN_PORT & RESET_IN) == 0)
-#else
-#define RESET_PRESSED ((RESET_IN_PORT & RESET_IN) != 0)
-#endif
 
 /*
  * Modes
@@ -336,7 +325,7 @@ void set_mode(unsigned char m) {
 
 void reset_console(void) {
     /* Assert the reset signal. */
-    if( RESET_ACTIVE == RESET_ACTIVE_LOW ) {
+    if( RESET_IN_PORT & RESET_ACTIVE_HIGH ) {
         RESET_OUT_PORT &= ~RESET_OUT;
     }
     else {
@@ -346,12 +335,19 @@ void reset_console(void) {
     __delay_ms(250);
 
     /* Stop resetting */
-    if( RESET_ACTIVE == RESET_ACTIVE_LOW ) {
+    if( RESET_IN_PORT & RESET_ACTIVE_HIGH ) {
         RESET_OUT_PORT |= RESET_OUT;
     }
     else {
         RESET_OUT_PORT &= ~RESET_OUT;
     }
+}
+
+int reset_pressed(void) {
+    if( RESET_IN_PORT & RESET_ACTIVE_HIGH ) {
+        return (RESET_IN_PORT & RESET_IN) ? 1 : 0;
+    }
+    return (RESET_IN_PORT & RESET_IN) ? 0 : 1;
 }
 
 void init_chip(void) {
@@ -368,6 +364,14 @@ void init_chip(void) {
         for( m = 0 ; m < MODES ; m++ ) {
             mode_mask[p] |= mode[m][p];
         }
+    }
+
+    /* Initial state for reset out. */
+    if( RESET_IN_PORT & RESET_ACTIVE_HIGH ) {
+        RESET_OUT_PORT &= ~RESET_OUT;
+    }
+    else {
+        RESET_OUT_PORT |= RESET_OUT;
     }
 
     /* Set pins to input/output as necessary. */
@@ -409,38 +413,33 @@ void main(void) {
     init_chip();
     load_config();
 
-    /* Full reset is not strictly necessary here, but this also ensures that
-     * the reset signal to the console is released, regardless of the initial
-     * state of the corresponding pin. */
-    reset_console();
-
     while(1) {
-        if( RESET_PRESSED ) {
+        if( reset_pressed() ) {
             /* Wait for bounce... */
             __delay_ms(RESET_DEBOUNCE);
 
-            if( RESET_PRESSED ) {
+            if( reset_pressed() ) {
                 /* Consider the button really pressed - not just noise. */
                 waiting = RESET_DEBOUNCE;
 
-                while( RESET_PRESSED && waiting < RESET_SHORT ) {
+                while( reset_pressed() && waiting < RESET_SHORT ) {
                     __delay_ms(100);
                     waiting += 100;
                 }
 
-                if( ! RESET_PRESSED ) {
+                if( ! reset_pressed() ) {
                     /* Button lifted early, so reset the console. */
                     reset_console();
                 }
                 else {
                     /* Whilst button is held, cycle through modes. */
-                    while( RESET_PRESSED ) {
-                        while( RESET_PRESSED && waiting < RESET_CYCLE ) {
+                    while( reset_pressed() ) {
+                        while( reset_pressed() && waiting < RESET_CYCLE ) {
                             __delay_ms(100);
                             waiting += 100;
                         }
 
-                        if ( RESET_PRESSED ) {
+                        if ( reset_pressed() ) {
                             waiting = 0;
                             displayed_mode++;
                             displayed_mode %= MODES;

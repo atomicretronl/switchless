@@ -88,6 +88,12 @@ chip (CIC).
 | Green      | 50Hz  | No          |
 | Blue       | 50Hz  | Yes         |
 
+#### Pin Functions
+| Pin     | Description                                               |
+|---------|-----------------------------------------------------------|
+| 50/60Hz | Connect to PPU1 pin 24 and PPU2 pin 30 (lifted from PCB). |
+| GPIO 0  | Connect to CIC pin 4 (lifted from PCB).                   |
+
 ### Sega Mega Drive/Genesis
 For this console, it's possible to switch languages (English/Japanese) and
 video mode (50/60Hz).
@@ -98,8 +104,15 @@ video mode (50/60Hz).
 | Red        | Japan  | 60Hz  | Japanese |
 | Green      | Europe | 50Hz  | English  |
 
-If your console has an active high reset, this can be catered for by correctly
-connecting the _Reset type_ pin.
+#### Pin Functions
+| Pin     | Description                         |
+|---------|-------------------------------------|
+| 50/60Hz | Connect to common point of JP3/JP4. |
+| GPIO 0  | Connect to common point of JP1/JP2. |
+
+Existing connections on named jumpers must be cut. If your console has an
+active high reset, this can be catered for by correctly connecting the _Reset
+type_ pin.
 
 ### Sega Saturn
 The Saturn offers a great number of region and video mode combinations. The
@@ -111,4 +124,12 @@ most useful are enabled by default.
 | Red        | Japan  | 60Hz  |
 | Green      | Europe | 50Hz  |
 | Yellow     | Europe | 60Hz  |
+
+#### Pin Functions
+| Pin     | Description                               |
+|---------|-------------------------------------------|
+| 50/60Hz | Connect to IC14 pin 79 (lifted from PCB). |
+| GPIO 0  | Connect to common point of JP6/JP7.       |
+| GPIO 1  | Connect to common point of JP10/JP11.     |
+| GPIO 2  | Connect to common point of JP12/JP13.     |
 

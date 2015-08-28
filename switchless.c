@@ -48,7 +48,7 @@
 #define LED_COMMON_ANODE    0x08
 
 /* Delays (in milliseconds) */
-#define RESET_DEBOUNCE      25
+#define RESET_DEBOUNCE      50
 #define RESET_SHORT         500
 #define RESET_CYCLE         1000
 
@@ -451,6 +451,9 @@ void main(void) {
                     if( current_mode != displayed_mode ) {
                         set_mode(displayed_mode);
                     }
+
+                    /* Wait for bounce after release. */
+                    __delay_ms(RESET_DEBOUNCE);
                 }
             }
         }

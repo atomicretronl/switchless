@@ -326,20 +326,22 @@ void set_mode(unsigned char m) {
 void reset_console(void) {
     /* Assert the reset signal. */
     if( RESET_IN_PORT & RESET_ACTIVE_HIGH ) {
-        RESET_OUT_PORT &= ~RESET_OUT;
-    }
-    else {
         RESET_OUT_PORT |= RESET_OUT;
     }
+    else {
+        RESET_OUT_PORT &= ~RESET_OUT;
+    }
+    RESET_OUT_TRIS &= ~RESET_OUT;
 
     __delay_ms(250);
 
     /* Stop resetting */
+    RESET_OUT_TRIS |= RESET_OUT;
     if( RESET_IN_PORT & RESET_ACTIVE_HIGH ) {
-        RESET_OUT_PORT |= RESET_OUT;
+        RESET_OUT_PORT &= ~RESET_OUT;
     }
     else {
-        RESET_OUT_PORT &= ~RESET_OUT;
+        RESET_OUT_PORT |= RESET_OUT;
     }
 }
 
@@ -366,14 +368,6 @@ void init_chip(void) {
         }
     }
 
-    /* Initial state for reset out. */
-    if( RESET_IN_PORT & RESET_ACTIVE_HIGH ) {
-        RESET_OUT_PORT &= ~RESET_OUT;
-    }
-    else {
-        RESET_OUT_PORT |= RESET_OUT;
-    }
-
     /* Set pins to input/output as necessary. */
     for( p = 0 ; p < MODE_PORTS ; p++ ) {
         unsigned char outputs = mode_mask[p];
@@ -385,11 +379,24 @@ void init_chip(void) {
             /* Leave as input */
         }
         if( mode_port[p] == &RESET_OUT_PORT ) {
-            outputs |= RESET_OUT;
+            /* Leave as input until asserting */
         }
 
         *mode_port[p] = 0;
         *mode_tris[p] = ~outputs;
+    }
+}
+
+/*
+ * Should the system have some kind of power-on reset circuit, wait for this
+ * to complete before there's any chance we'll assert reset ourself.
+ */
+void wait_reset() {
+    if( RESET_IN_PORT & RESET_ACTIVE_HIGH ) {
+        while((RESET_IN_PORT & RESET_OUT) == RESET_OUT);
+    }
+    else {
+        while((RESET_IN_PORT & RESET_OUT) == 0);
     }
 }
 
@@ -411,6 +418,7 @@ void main(void) {
 
     /* Initialisation */
     init_chip();
+    wait_reset();
     load_config();
 
     while(1) {
@@ -452,8 +460,9 @@ void main(void) {
                         set_mode(displayed_mode);
                     }
 
-                    /* Wait for bounce after release. */
-                    __delay_ms(RESET_DEBOUNCE);
+                    /* Wait extra long for any bounce after release to prevent
+                     * accidental reset after mode change. */
+                    __delay_ms(RESET_SHORT);
                 }
             }
         }

@@ -32,9 +32,10 @@ same pinout, as illustrated below.
 
 * _Reset button/Reset console_:
   The console's reset button, usually isolated form the system, is connected to
-  the _Reset button_ pin. When pressed briefly (by default < 500ms) the _Reset
-  console_ pin is activated, resetting the console as normal. Holding the reset
-  button cycles through the available modes.
+  the _Reset button_ pin. A pull-up/pull-down resistor may be necessary for
+  stable operation, once the button is isolated. When pressed briefly (by
+  default < 500ms) the _Reset console_ pin is activated, resetting the console
+  as normal. Holding the reset button cycles through the available modes.
 
 * _Reset type_:
   For consoles with active low reset, tie this pin to ground. For consoles with
@@ -64,29 +65,29 @@ The following default modes are preconfigured in the C source file. These can
 of course be edited before compilation.
 
 ### Nintendo Super NES/Super Famicom
-For this console, the SuperCIC (https://sd2snes.de/blog/cool-stuff/supercic)
-is recommended instead. Otherwise, this code offers four modes which mirror
-the states of the traditional switched mod. This allows independent switching
-between 50Hz and 60Hz modes, as well as enabling/disabling the region lockout
-chip (CIC).
+For this console, the [SuperCIC](https://sd2snes.de/blog/cool-stuff/supercic)
+mod is recommended as this offers full region-free operation. Otherwise, this
+code offers four modes which mirror the states of the traditional switched mod.
+This allows independent switching between 50Hz and 60Hz modes, as well as
+enabling/disabling the region lockout chip (CIC).
 
 #### PAL (Europe) Consoles
 
-| LED colour | Video | CIC enabled |
-|------------|-------|-------------|
-| Red        | 50Hz  | Yes         |
-| Yellow     | 50Hz  | No          |
-| Green      | 60Hz  | No          |
-| Blue       | 60Hz  | Yes         |
+| LED colour | Video | CIC enabled | Description                    |
+|------------|-------|-------------|--------------------------------|
+| Red        | 50Hz  | Yes         | Factory default.               |
+| Yellow     | 50Hz  | No          | Factory default, CIC disabled. |
+| Green      | 60Hz  | No          | 60Hz mode, CIC disabled.       |
+| Blue       | 60Hz  | Yes         | 60Hz mode, CIC enabled.        |
 
 #### NTSC (US/JP) Consoles
 
-| LED colour | Video | CIC enabled |
-|------------|-------|-------------|
-| Red        | 60Hz  | Yes         |
-| Yellow     | 60Hz  | No          |
-| Green      | 50Hz  | No          |
-| Blue       | 50Hz  | Yes         |
+| LED colour | Video | CIC enabled | Description                    |
+|------------|-------|-------------|--------------------------------|
+| Red        | 60Hz  | Yes         | Factory default.               |
+| Yellow     | 60Hz  | No          | Factory default, CIC disabled. |
+| Green      | 50Hz  | No          | 60Hz mode, CIC disabled.       |
+| Blue       | 50Hz  | Yes         | 60Hz mode, CIC enabled.        |
 
 #### Pin Functions
 | Pin     | Description                                               |
